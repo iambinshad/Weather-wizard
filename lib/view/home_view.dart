@@ -1,10 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:weather_wizard/constants/constants.dart';
+import 'package:weather_wizard/infrastructure/weather_api/weather_api.dart';
+import 'package:weather_wizard/infrastructure/weather_details.dart';
 
+import '../domain/code/debouncer/debouncer.dart';
 import '../domain/model/data_model.dart';
 
-final ValueNotifier<double> temperature = ValueNotifier<double>(0.0);
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -14,157 +17,278 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final _inputController = TextEditingController();
-   Future<Weather?>? futureWeather;
+  final _debouncer = Debouncer(milliseconds: 1 * 1000);
+  Future<Weather?>? futureWeather;
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
           gradient: LinearGradient(colors: [
-        Color.fromARGB(255, 35, 96, 218),
-        Color.fromARGB(255, 201, 4, 27),
+        Color.fromARGB(255, 4, 83, 241),
+        Color.fromARGB(255, 2, 136, 246),
       ], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
       child: Opacity(
           opacity: 0.8,
           child: Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: Colors.blue,
             appBar: AppBar(
-              title:  CupertinoSearchTextField(
+              title: CupertinoSearchTextField(
+                onChanged: (value) async {
+                  _debouncer.run(() async {
+                    Weather? weatherResult =
+                        await WeatherApiClass.fetchWeatherDetails(
+                            searchCity: _inputController.text);
+                    Provider.of<WeatherDetails>(context, listen: false)
+                        .setWeather = weatherResult;
+                  });
+                },
                 controller: _inputController,
                 placeholder: 'Search city',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
                 backgroundColor: Colors.white,
               ),
               backgroundColor: Colors.transparent,
             ),
-            body: Padding(
-              padding: const EdgeInsets.only(right: 15, left: 15),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Column(
+            body: SingleChildScrollView(
+              child: Padding(
+                  padding: const EdgeInsets.only(right: 15, left: 15),
+                  child: Consumer<WeatherDetails>(
+                    builder: (context, value, child) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          textModel(text: 'Malappuram', size: 25),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Column(
+                                children: [
+                                  Consumer<WeatherDetails>(
+                                      builder: (context, value, child) {
+                                    return _inputController != null
+                                        ? textModel(
+                                            text: _inputController.text,
+                                            size: 27)
+                                        : const Text(
+                                            'Search Your City Weather',
+                                          );
+                                  }),
+                                  kHeight10,
+                                  Consumer<WeatherDetails>(
+                                      builder: (context, value, child) {
+                                    return value.weather != null
+                                        ? textModel(
+                                            text: "${value.weather!.country}",
+                                            size: 27)
+                                        : const Text('0,0');
+                                  }),
+                                ],
+                              )
+                            ],
+                          ),
                           kHeight10,
-                          textModel(text: 'India', size: 27),
-                        ],
-                      )
-                    ],
-                  ),
-                  kHeight10,
-                  textModel(text: "Today's Report"),
-                  kHeight25,
-                  kHeight10,
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Stack(
-                        children: [
-                          Positioned(
-                              child: Opacity(
-                            opacity: 0.4,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                  color: Colors.grey,
-                                  borderRadius: BorderRadius.circular(10)),
-                              height: 300,
-                              width: 300,
-                            ),
-                          )),
-                          Container(
-                            decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(10)),
-                            height: 300,
-                            width: 300,
-                            child: Column(
-                              children: [
-                                kHeight15,
-                                const Image(
-                                  image: AssetImage(
-                                    'assets/icons8-weather-64.png',
+                          textModel(text: "Today's Report"),
+                          kHeight25,
+                          kHeight10,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Stack(
+                                children: [
+                                  Positioned(
+                                      child: Opacity(
+                                    opacity: 0.8,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                          color: const Color.fromARGB(
+                                              255, 12, 54, 88),
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                      height: 300,
+                                      width: 300,
+                                    ),
+                                  )),
+                                  Center(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                          color: Colors.transparent,
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                      height: 300,
+                                      width: 300,
+                                      child: Column(
+                                        children: [
+                                          kHeight15,
+                                          const Image(
+                                              image: AssetImage(
+                                                  'assets/icons8-weather-66.png')),
+                                          // Image.network(
+                                          //   'http:${value.weather?.icon}',
+                                          // ),
+                                          kHeight10,
+                                          bigBoxConsumer(
+                                              item:
+                                                  value.weather?.conditionText,
+                                              size: 30),
+                                          kHeight10,
+                                          Consumer<WeatherDetails>(
+                                              builder: (context, value, child) {
+                                            return value.weather != null
+                                                ? Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      textModel(
+                                                          text:
+                                                              "${value.weather!.tempC}",
+                                                          size: 100),
+                                                      textModel(
+                                                          text: '\u00B0',
+                                                          size: 80),
+                                                    ],
+                                                  )
+                                                : const Text('0,0');
+                                          }),
+                                          bigBoxConsumer(
+                                              item: value.weather?.localtime,
+                                              size: 20),
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                  height: 80,
-                                  width: 100,
-                                ),
-                                kHeight10,
-                                textModel(text: 'Cloudy', size: 40),
-                                kHeight10,
-                                textModel(text: '39', size: 140),
-                              ],
-                            ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          kHeight25,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Consumer<WeatherDetails>(
+                                builder: (context, value, child) {
+                                  return weatherbox(
+                                      imgIndex: 0,
+                                      value: '${value.weather?.cloud}',
+                                      item: 'Cloud');
+                                },
+                              ),
+                              Consumer<WeatherDetails>(
+                                builder: (context, value, child) {
+                                  return weatherbox(
+                                      imgIndex: 1,
+                                      value: '${value.weather?.uv}',
+                                      item: 'UV');
+                                },
+                              ),
+                              Consumer<WeatherDetails>(
+                                builder: (context, value, child) {
+                                  return weatherbox(
+                                      imgIndex: 2,
+                                      value: '${value.weather?.windKph}',
+                                      item: 'Wind');
+                                },
+                              ),
+                            ],
+                          ),
+                          kHeight15,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Consumer<WeatherDetails>(
+                                builder: (context, value, child) {
+                                  return weatherbox(
+                                      imgIndex: 3,
+                                      value: '${value.weather?.pressure}',
+                                      item: 'Pressure');
+                                },
+                              ),
+                              Consumer<WeatherDetails>(
+                                builder: (context, value, child) {
+                                  return weatherbox(
+                                      imgIndex: 4,
+                                      value: '${value.weather?.humidity}',
+                                      item: 'Humidity');
+                                },
+                              ),
+                              Consumer<WeatherDetails>(
+                                builder: (context, value, child) {
+                                  return weatherbox(
+                                      imgIndex: 5,
+                                      value: '${value.weather?.feelsLikeC}',
+                                      item: 'Feels Like');
+                                },
+                              ),
+                            ],
+                          ),
+                          kHeight15,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Stack(
+                                children: [
+                                  Positioned(
+                                      child: Opacity(
+                                    opacity: 0.8,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                          color: const Color.fromARGB(
+                                              255, 12, 54, 88),
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                      height: 60,
+                                      width: 335,
+                                    ),
+                                  )),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                        color: Colors.transparent,
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                    height: 60,
+                                    width: 335,
+                                    child: Column(
+                                      children: [
+                                        ListTile(
+                                          title: Consumer<WeatherDetails>(
+                                            builder: (context, value, child) {
+                                              return Center(
+                                                child: textModel(
+                                                    text:
+                                                        'Last Upadated : ${value.weather?.lastUpdated}',
+                                                    size: 20),
+                                              );
+                                            },
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ],
-                      ),
-                    ],
-                  ),
-                  kHeight25,
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      weatherbox(imgIndex: 0, value: 25, item: 'Cloud'),
-                      weatherbox(imgIndex: 1, value: 6.0, item: 'UV'),
-                      weatherbox(imgIndex: 2, value: 25, item: 'Wind'),
-                    ],
-                  ),
-                  kHeight15,
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      weatherbox(imgIndex: 3, value: 25, item: 'Pressure'),
-                      weatherbox(imgIndex: 4, value: 6.0, item: 'Humidity'),
-                      weatherbox(imgIndex: 5, value: 25, item: 'Feels Like'),
-                    ],
-                  ),
-                  kHeight15,
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Stack(
-                        children: [
-                          Positioned(
-                              child: Opacity(
-                            opacity: 0.4,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                  color: Colors.grey,
-                                  borderRadius: BorderRadius.circular(10)),
-                              height: 60,
-                              width: 335,
-                            ),
-                          )),
-                          Container(
-                            decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(10)),
-                            height: 60,
-                            width: 335,
-                            child: Column(
-                              children: [
-                                ListTile(
-                                  title: textModel(
-                                      text:
-                                          'Last Upadated :  2023-02-27   08:45',
-                                      size: 20),
-                                )
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                      );
+                    },
+                  )),
             ),
           )),
     );
   }
 
+  Consumer<WeatherDetails> bigBoxConsumer(
+      {required var item, required double size}) {
+    return Consumer<WeatherDetails>(builder: (context, value, child) {
+      return value.weather != null
+          ? Center(
+              child: textModel(text: item, size: size),
+            )
+          : const Text('0,0');
+    });
+  }
+
   Stack weatherbox(
-      {required int imgIndex, required double value, required String item}) {
+      {required int imgIndex, required var value, required String item}) {
     var img = [
       'assets/icons8-happy-cloud-48.png',
       'assets/icons8-uv-index-64.png',
@@ -177,10 +301,11 @@ class _HomePageState extends State<HomePage> {
       children: [
         Positioned(
             child: Opacity(
-          opacity: 0.4,
+          opacity: 0.8,
           child: Container(
             decoration: BoxDecoration(
-                color: Colors.grey, borderRadius: BorderRadius.circular(10)),
+                color: const Color.fromARGB(255, 12, 54, 88),
+                borderRadius: BorderRadius.circular(10)),
             height: 90,
             width: 90,
           ),
@@ -200,8 +325,14 @@ class _HomePageState extends State<HomePage> {
                   height: 40,
                   width: 40,
                 ),
-                textModel(text: value.toString(), size: 18),
-                textModel(text: item, size: 18),
+                textModel(
+                  text: value.toString(),
+                  size: 18,
+                ),
+                textModel(
+                    text: item,
+                    size: 18,
+                    color: const Color.fromARGB(255, 228, 227, 227)),
               ],
             ),
           ),
@@ -210,14 +341,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Text textModel({required String text, double size = 25}) {
+  Text textModel(
+      {required String text, double size = 25, color = Colors.white}) {
     return Text(
       text,
       style: TextStyle(
+          overflow: TextOverflow.ellipsis,
           fontSize: size,
           fontFamily: 'Roboto',
           fontWeight: FontWeight.bold,
-          color: Colors.white),
+          color: color),
     );
   }
 }
