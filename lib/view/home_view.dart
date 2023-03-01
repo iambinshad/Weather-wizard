@@ -23,27 +23,30 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-          gradient: LinearGradient(colors: [
-        Color.fromARGB(255, 4, 83, 241),
-        Color.fromARGB(255, 2, 136, 246),
-      ], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
+        image: DecorationImage(
+            image:
+                AssetImage('assets/30d49422-e47f-402a-94b1-ad22014d6d0a.jpg'),
+            fit: BoxFit.cover),
+      ),
       child: Opacity(
           opacity: 0.8,
           child: Scaffold(
-            backgroundColor: Colors.blue,
+            backgroundColor: Colors.transparent,
             appBar: AppBar(
               title: CupertinoSearchTextField(
                 onChanged: (value) async {
                   _debouncer.run(() async {
                     Weather? weatherResult =
                         await WeatherApiClass.fetchWeatherDetails(
-                            searchCity: _inputController.text);
+                            searchCity: _inputController.text,
+                            context: context);
                     Provider.of<WeatherDetails>(context, listen: false)
                         .setWeather = weatherResult;
                   });
                 },
                 controller: _inputController,
                 placeholder: 'Search city',
+                suffixIcon: const Icon(Icons.search),
                 prefixIcon: const Icon(Icons.search),
                 backgroundColor: Colors.white,
               ),
@@ -62,16 +65,6 @@ class _HomePageState extends State<HomePage> {
                             children: [
                               Column(
                                 children: [
-                                  Consumer<WeatherDetails>(
-                                      builder: (context, value, child) {
-                                    return _inputController != null
-                                        ? textModel(
-                                            text: _inputController.text,
-                                            size: 27)
-                                        : const Text(
-                                            'Search Your City Weather',
-                                          );
-                                  }),
                                   kHeight10,
                                   Consumer<WeatherDetails>(
                                       builder: (context, value, child) {
@@ -79,16 +72,18 @@ class _HomePageState extends State<HomePage> {
                                         ? textModel(
                                             text: "${value.weather!.country}",
                                             size: 27)
-                                        : const Text('0,0');
+                                        : textModel(
+                                            text: 'Country',
+                                            size: 27,
+                                            color: Colors.white);
                                   }),
                                 ],
                               )
                             ],
                           ),
                           kHeight10,
-                          textModel(text: "Today's Report"),
+                          textModel(text: "Today's Report", size: 27),
                           kHeight25,
-                          kHeight10,
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -96,11 +91,11 @@ class _HomePageState extends State<HomePage> {
                                 children: [
                                   Positioned(
                                       child: Opacity(
-                                    opacity: 0.8,
+                                    opacity: 0.7,
                                     child: Container(
                                       decoration: BoxDecoration(
                                           color: const Color.fromARGB(
-                                              255, 12, 54, 88),
+                                              255, 13, 62, 102),
                                           borderRadius:
                                               BorderRadius.circular(10)),
                                       height: 300,
@@ -110,7 +105,7 @@ class _HomePageState extends State<HomePage> {
                                   Center(
                                     child: Container(
                                       decoration: BoxDecoration(
-                                          color: Colors.transparent,
+                                          color: Colors.black26,
                                           borderRadius:
                                               BorderRadius.circular(10)),
                                       height: 300,
@@ -147,7 +142,8 @@ class _HomePageState extends State<HomePage> {
                                                           size: 80),
                                                     ],
                                                   )
-                                                : const Text('0,0');
+                                                : textModel(
+                                                    text: '0.0', size: 80);
                                           }),
                                           bigBoxConsumer(
                                               item: value.weather?.localtime,
@@ -168,7 +164,9 @@ class _HomePageState extends State<HomePage> {
                                 builder: (context, value, child) {
                                   return weatherbox(
                                       imgIndex: 0,
-                                      value: '${value.weather?.cloud}',
+                                      value: value.weather != null
+                                          ? '${value.weather?.cloud}'
+                                          : "0.0",
                                       item: 'Cloud');
                                 },
                               ),
@@ -176,7 +174,9 @@ class _HomePageState extends State<HomePage> {
                                 builder: (context, value, child) {
                                   return weatherbox(
                                       imgIndex: 1,
-                                      value: '${value.weather?.uv}',
+                                      value: value.weather != null
+                                          ? '${value.weather?.uv}'
+                                          : "0.0",
                                       item: 'UV');
                                 },
                               ),
@@ -184,7 +184,9 @@ class _HomePageState extends State<HomePage> {
                                 builder: (context, value, child) {
                                   return weatherbox(
                                       imgIndex: 2,
-                                      value: '${value.weather?.windKph}',
+                                      value: value.weather != null
+                                          ? '${value.weather?.windKph}KPH'
+                                          : "0.0",
                                       item: 'Wind');
                                 },
                               ),
@@ -196,26 +198,41 @@ class _HomePageState extends State<HomePage> {
                             children: [
                               Consumer<WeatherDetails>(
                                 builder: (context, value, child) {
-                                  return weatherbox(
-                                      imgIndex: 3,
-                                      value: '${value.weather?.pressure}',
-                                      item: 'Pressure');
+                                  return Row(
+                                    children: [
+                                      weatherbox(
+                                          imgIndex: 3,
+                                          value: value.weather != null
+                                              ? '${value.weather?.pressure}'
+                                              : "0.0",
+                                          item: 'Pressure'),
+                                    ],
+                                  );
                                 },
                               ),
                               Consumer<WeatherDetails>(
                                 builder: (context, value, child) {
                                   return weatherbox(
                                       imgIndex: 4,
-                                      value: '${value.weather?.humidity}',
+                                      value: value.weather != null
+                                          ? '${value.weather?.humidity}%'
+                                          : "0.0",
                                       item: 'Humidity');
                                 },
                               ),
                               Consumer<WeatherDetails>(
                                 builder: (context, value, child) {
-                                  return weatherbox(
-                                      imgIndex: 5,
-                                      value: '${value.weather?.feelsLikeC}',
-                                      item: 'Feels Like');
+                                  return Row(
+                                    children: [
+                                      weatherbox(
+                                          imgIndex: 5,
+                                          value: value.weather != null
+                                              ? '${value.weather?.feelsLikeC}'
+                                              : "0.0",
+                                          item: 'Real feel'),
+                                      textModel(text: '\u00B0', size: 10),
+                                    ],
+                                  );
                                 },
                               ),
                             ],
@@ -241,7 +258,7 @@ class _HomePageState extends State<HomePage> {
                                   )),
                                   Container(
                                     decoration: BoxDecoration(
-                                        color: Colors.transparent,
+                                        color: Colors.black26,
                                         borderRadius:
                                             BorderRadius.circular(10)),
                                     height: 60,
@@ -252,10 +269,19 @@ class _HomePageState extends State<HomePage> {
                                           title: Consumer<WeatherDetails>(
                                             builder: (context, value, child) {
                                               return Center(
-                                                child: textModel(
-                                                    text:
-                                                        'Last Upadated : ${value.weather?.lastUpdated}',
-                                                    size: 20),
+                                                child: Row(
+                                                  children: [
+                                                    textModel(
+                                                        text:
+                                                            'Last Upadated : '),
+                                                    textModel(
+                                                        text: value.weather !=
+                                                                null
+                                                            ? '${value.weather?.lastUpdated}'
+                                                            : "__.__",
+                                                        size: 20),
+                                                  ],
+                                                ),
                                               );
                                             },
                                           ),
@@ -283,7 +309,7 @@ class _HomePageState extends State<HomePage> {
           ? Center(
               child: textModel(text: item, size: size),
             )
-          : const Text('0,0');
+          : textModel(text: ('_._'));
     });
   }
 
@@ -301,7 +327,7 @@ class _HomePageState extends State<HomePage> {
       children: [
         Positioned(
             child: Opacity(
-          opacity: 0.8,
+          opacity: 0.9,
           child: Container(
             decoration: BoxDecoration(
                 color: const Color.fromARGB(255, 12, 54, 88),
@@ -312,8 +338,7 @@ class _HomePageState extends State<HomePage> {
         )),
         Container(
           decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(10)),
+              color: Colors.black54, borderRadius: BorderRadius.circular(10)),
           height: 90,
           width: 90,
           child: Padding(
@@ -326,7 +351,7 @@ class _HomePageState extends State<HomePage> {
                   width: 40,
                 ),
                 textModel(
-                  text: value.toString(),
+                  text: value,
                   size: 18,
                 ),
                 textModel(
